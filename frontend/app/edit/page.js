@@ -1,17 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
-import ReactQuill from "react-quill"; 
+import dynamic from "next/dynamic";
 import { CldUploadWidget } from "next-cloudinary";
-import 'react-quill/dist/quill.snow.css';
 import { Alert } from "@mui/material";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import 'react-quill/dist/quill.snow.css';
 
 export default function Edit() {
   const [id, setId] = useState(null);
   const [input, setInput] = useState({ title: "", description: "", blogImage: "" });
   const [alert, setAlert] = useState({ visible: false, message: "", severity: "" });
-  const router = useRouter()
+  const router = useRouter();
+  const [isClient, setIsClient] = useState(false); 
+
+  useEffect(() => {
+    setIsClient(true); 
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -38,7 +45,7 @@ export default function Edit() {
     axios.put(`http://localhost:8000/blogs/get-blog/${id}`, input)
       .then((response) => {
         setAlert({ visible: true, message: "Амжилттай засагдлаа.", severity: "success" });
-        router.push('/')
+        router.push('/');
       })
       .catch((error) => {
         console.error("Алдаа гарлаа.", error);
@@ -72,35 +79,39 @@ export default function Edit() {
         </div>
         <div>
           <p className="font-bold">Дэлгэрэнхий</p>
-          <ReactQuill
-            value={input.description}
-            onChange={(content) => setInput((prev) => ({ ...prev, description: content }))}
-          />
+          {isClient && (
+            <ReactQuill
+              value={input.description}
+              onChange={(content) => setInput((prev) => ({ ...prev, description: content }))}
+            />
+          )}
         </div>
         <div>
           <p className="font-bold">Зураг</p>
-          <CldUploadWidget
-            uploadPreset="uehrhnkw"
-            onSuccess={(result, { widget }) => {
-              setInput((prev) => ({
-                ...prev,
-                blogImage: result?.info?.secure_url,
-              }));
-              widget.close();
-            }}
-          >
-            {({ open }) => (
-              <button
-                className="p-2 bg-slate-100 border rounded-xl"
-                onClick={(e) => {
-                  e.preventDefault();
-                  open();
-                }}
-              >
-                Зураг оруулах
-              </button>
-            )}
-          </CldUploadWidget>
+          {isClient && (
+            <CldUploadWidget
+              uploadPreset="uehrhnkw"
+              onSuccess={(result, { widget }) => {
+                setInput((prev) => ({
+                  ...prev,
+                  blogImage: result?.info?.secure_url,
+                }));
+                widget.close();
+              }}
+            >
+              {({ open }) => (
+                <button
+                  className="p-2 bg-slate-100 border rounded-xl"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    open();
+                  }}
+                >
+                  Зураг оруулах
+                </button>
+              )}
+            </CldUploadWidget>
+          )}
         </div>
         <button 
           className="px-6 py-2 bg-red-100 rounded-xl border-0 font-bold" 
